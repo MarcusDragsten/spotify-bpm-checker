@@ -1,9 +1,6 @@
 from src.spotify_getters.spotify_playlist import SpotifyPlaylist
 from src.spotify_getters.spotify_track import SpotifyTrack
-import sys
-import io
-
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+from src.utils.track_workout_score import calculate_workout_song_score
 
 
 def get_bpm_playlist(playlist_id: str):
@@ -11,15 +8,22 @@ def get_bpm_playlist(playlist_id: str):
     track = SpotifyTrack()
 
     tracks = playlist.get_playlist_tracks(playlist_id)
+    tracks_with_audio_features = track.add_audio_features(tracks)
 
-    for track_meta in tracks:
-        track_meta = track.add_audio_features(track_meta)
-        track_meta = track.add_audio_analysis(track_meta)
+    for track_meta in tracks_with_audio_features:
+        track_meta["workout_score"] = (
+            calculate_workout_song_score(track_meta["audio_features"])
+            if track_meta["audio_features"]
+            else None
+        )
 
-    return tracks
+    # Sort tracks by workout_score in descending order
+    sorted_tracks = sorted(
+        tracks_with_audio_features,
+        key=lambda x: (
+            x["workout_score"] if x["workout_score"] is not None else -float("inf")
+        ),
+        reverse=True,
+    )
 
-
-if __name__ == "__main__":
-    get_bpm_playlist("4nwsUSRJvO8bRegd76PwBO")
-
-    # https://open.spotify.com/playlist/4nwsUSRJvO8bRegd76PwBO?si=21ce5e514a59420d
+    return sorted_tracks

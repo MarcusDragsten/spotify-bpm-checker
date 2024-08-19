@@ -2,10 +2,11 @@ from typing_extensions import TypedDict
 
 
 class TrackAudioFeatures(TypedDict):
+    danceability: float | None
     tempo: float | None
-    tempo_confidence: float | None
     energy: float | None
-    
+    valence: float | None
+
 
 class TrackMetadata(TypedDict):
     id: str
@@ -14,3 +15,4 @@ class TrackMetadata(TypedDict):
     album: str
     album_release_date: str
     audio_features: TrackAudioFeatures | None
+    workout_score: float | None

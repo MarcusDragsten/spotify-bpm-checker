@@ -2,6 +2,7 @@ import requests
 
 from src.get_access_token import get_access_token
 from src.entitites.track import TrackMetadata, TrackAudioFeatures
+from tqdm import tqdm
 
 
 class SpotifyTrack:
@@ -11,35 +12,33 @@ class SpotifyTrack:
             "Authorization": f"Bearer {self.access_token}",
         }
 
-    def add_audio_features(self, playlist_track: TrackMetadata) -> TrackMetadata:
-        url = f"https://api.spotify.com/v1/audio-features/{playlist_track['id']}"
-        resp = requests.get(url, headers=self.headers)
-        audio_features = resp.json()
+    def chunk_list(self, lst, chunk_size):
+        """Yield successive chunks from lst."""
+        for i in range(0, len(lst), chunk_size):
+            yield lst[i : i + chunk_size]
 
-        if not playlist_track["audio_features"]:
-            playlist_track["audio_features"] = TrackAudioFeatures(
-                tempo=None, tempo_confidence=None, energy=audio_features["energy"]
-            )
-        else:
-            playlist_track["audio_features"]["energy"] = audio_features["energy"]
+    def add_audio_features(
+        self, playlist_tracks: list[TrackMetadata]
+    ) -> list[TrackMetadata]:
+        tracks_with_audio_features: list[TrackMetadata] = []
 
-        return playlist_track
+        for chunk in tqdm(
+            self.chunk_list(playlist_tracks, 100), desc="Processing tracks in chunks"
+        ):
+            url = f"https://api.spotify.com/v1/audio-features?ids={','.join([track['id'] for track in chunk])}"
+            resp = requests.get(url, headers=self.headers)
+            audio_features = resp.json()
 
-    def add_audio_analysis(self, playlist_track: TrackMetadata) -> TrackMetadata:
-        url = f"https://api.spotify.com/v1/audio-analysis/{playlist_track['id']}"
-        resp = requests.get(url, headers=self.headers)
-        audio_analysis = resp.json()
+            for track in chunk:
+                for audio_feature in audio_features["audio_features"]:
+                    if track["id"] == audio_feature["id"]:
+                        track["audio_features"] = TrackAudioFeatures(
+                            danceability=audio_feature["danceability"],
+                            tempo=audio_feature["tempo"],
+                            energy=audio_feature["energy"],
+                            valence=audio_feature["valence"],
+                        )
+                        tracks_with_audio_features.append(track)
+                        break
 
-        if not playlist_track["audio_features"]:
-            playlist_track["audio_features"] = TrackAudioFeatures(
-                tempo=audio_analysis["track"]["tempo"],
-                tempo_confidence=audio_analysis["track"]["tempo_confidence"],
-                energy=None,
-            )
-        else:
-            playlist_track["audio_features"]["tempo"] = audio_analysis["track"]["tempo"]
-            playlist_track["audio_features"]["tempo_confidence"] = audio_analysis[
-                "track"
-            ]["tempo_confidence"]
-
-        return playlist_track
+        return tracks_with_audio_features

@@ -2,6 +2,7 @@ import requests
 
 from src.get_access_token import get_access_token
 from src.entitites.track import TrackMetadata
+from tqdm import tqdm
 
 
 class SpotifyPlaylist:
@@ -29,7 +30,7 @@ class SpotifyPlaylist:
         tracks_list: list[TrackMetadata] = []
 
         while True:
-            for item in tracks_obj["items"]:
+            for item in tqdm(tracks_obj["items"], desc="Going through page of tracks"):
                 track = item["track"]
                 artists = [artist["name"] for artist in track["artists"]]
                 track_data: TrackMetadata = {
@@ -39,6 +40,7 @@ class SpotifyPlaylist:
                     "album": track["album"]["name"],
                     "album_release_date": track["album"]["release_date"],
                     "audio_features": None,
+                    "workout_score": None,
                 }
                 tracks_list.append(track_data)
 
@@ -48,8 +50,3 @@ class SpotifyPlaylist:
             tracks_obj = self.get_next_page(tracks_obj["next"])
 
         return tracks_list
-
-
-if __name__ == "__main__":
-    cl = SpotifyPlaylist()
-    cl.get_playlist_tracks("5W5rQIkSsjlsdQoyxnMNIZ")

@@ -8,24 +8,25 @@ Checks a playlist's tracks for their BPM (beats per minute).
 2. Create a virtual environment:
 
 ```bash
-python3 -m .venv venv # or use specific version of python, e.g. python3.12
+python -m venv .venv # or use specific version of python, e.g. python3.12
 ```
 
 3. Activate the virtual environment:
 
 ```bash
-source .venv/bin/activate
+source .venv/bin/activate # or .venv/Scripts/activate on Windows
 ```
 
-4. Install Poetry:
+4. Install `poetry` with pip:
 
 ```bash
 pip install poetry
 ```
 
-5. Install dependencies:
+5. Go to the `app` directory and install dependencies with poetry:
 
 ```bash
+cd app
 poetry install
 ```
 
@@ -39,7 +40,7 @@ CLIENT_SECRET=<ask Marcus>
 ## Usage
 
 ```bash
-cd app
+cd app # If not already in the app directory
 export PYTHONPATH=.
 python <python_file_to_run>
 

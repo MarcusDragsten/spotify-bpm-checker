@@ -50,9 +50,7 @@ def get_bpm_playlist(playlist_id: str):
     )
 
     print(sorted_tracks[:5]) # Print the top 5 tracks
+    top_5_tracks = sorted_tracks[:5]
 
-    return sorted_tracks
+    return top_5_tracks
 
-
-if __name__ == "__main__":
-    get_bpm_playlist("4nwsUSRJvO8bRegd76PwBO")  # Insert your playlist id here

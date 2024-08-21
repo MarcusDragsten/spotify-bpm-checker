@@ -33,9 +33,14 @@ class SpotifyTrack:
                 for audio_feature in audio_features["audio_features"]:
                     if track["id"] == audio_feature["id"]:
                         track["audio_features"] = TrackAudioFeatures(
+                            acousticness=audio_feature["acousticness"],
                             danceability=audio_feature["danceability"],
-                            tempo=audio_feature["tempo"],
                             energy=audio_feature["energy"],
+                            instrumentalness=audio_feature["instrumentalness"],
+                            liveness=audio_feature["liveness"],
+                            loudness=audio_feature["loudness"],
+                            speechiness=audio_feature["speechiness"],
+                            tempo=audio_feature["tempo"],
                             valence=audio_feature["valence"],
                         )
                         tracks_with_audio_features.append(track)

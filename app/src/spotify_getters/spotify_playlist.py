@@ -39,8 +39,10 @@ class SpotifyPlaylist:
                     "artists": artists,
                     "album": track["album"]["name"],
                     "album_release_date": track["album"]["release_date"],
+                    "preview_url": track["preview_url"],
+                    "big_image_url": track["album"]["images"][0]["url"],
                     "audio_features": None,
-                    "workout_score": None,
+                    "preset_scores": None,
                 }
                 tracks_list.append(track_data)
 

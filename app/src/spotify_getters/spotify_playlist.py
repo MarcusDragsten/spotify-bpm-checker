@@ -40,7 +40,7 @@ class SpotifyPlaylist:
                     "album": track["album"]["name"],
                     "album_release_date": track["album"]["release_date"],
                     "preview_url": track["preview_url"],
-                    "big_image_url": track["album"]["images"][0]["url"],
+                    #"big_image_url": track["album"]["images"][0]["url"],
                     "audio_features": None,
                     "preset_scores": None,
                 }

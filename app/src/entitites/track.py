@@ -25,6 +25,6 @@ class TrackMetadata(TypedDict):
     album: str
     album_release_date: str
     preview_url: str
-    big_image_url: str
+    # big_image_url: str
     audio_features: TrackAudioFeatures | None
     preset_scores: PresetScores | None

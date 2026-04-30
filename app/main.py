@@ -1,6 +1,8 @@
 import os
 
-from fastapi import FastAPI
+import truststore; truststore.inject_into_ssl()  # use macOS Keychain for SSL verification
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -40,7 +42,10 @@ def health() -> dict[str, str]:
 
 @app.get("/playlists/{playlist_id}/analysis", response_model=list[TrackResult])
 def get_playlist_analysis(playlist_id: str) -> list[TrackResult]:
-    tracks = analyze_playlist(playlist_id)
+    try:
+        tracks = analyze_playlist(playlist_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     return [
         TrackResult(
             id=t["id"],

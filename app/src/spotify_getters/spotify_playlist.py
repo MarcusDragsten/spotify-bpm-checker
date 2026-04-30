@@ -24,6 +24,11 @@ class SpotifyPlaylist:
     def get_playlist_tracks(self, playlist_id: str) -> list[TrackMetadata]:
         playlist_json = self.get_playlist(playlist_id)
 
+        if "error" in playlist_json:
+            status = playlist_json["error"].get("status", 0)
+            msg = playlist_json["error"].get("message", "Unknown error")
+            raise ValueError(f"Spotify API error {status}: {msg}")
+
         tracks_obj = playlist_json["tracks"]
         tracks_list: list[TrackMetadata] = []
 

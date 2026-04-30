@@ -15,39 +15,51 @@ class SpotifyTrack:
         for i in range(0, len(lst), chunk_size):
             yield lst[i : i + chunk_size]
 
+    RECCOBEATS_URL = "https://api.reccobeats.com/v1/audio-features"
+    RECCOBEATS_BATCH_SIZE = 40
+
     def add_audio_features(
         self, playlist_tracks: list[TrackMetadata]
     ) -> list[TrackMetadata]:
         for chunk in tqdm(
-            self.chunk_list(playlist_tracks, 100), desc="Processing tracks in chunks"
+            self.chunk_list(playlist_tracks, self.RECCOBEATS_BATCH_SIZE),
+            desc="Fetching audio features",
         ):
-            url = f"https://api.spotify.com/v1/audio-features?ids={','.join([track['id'] for track in chunk])}"
-            resp = requests.get(url, headers=self.headers)
+            ids_param = "&".join(f"ids={track['id']}" for track in chunk)
+            url = f"{self.RECCOBEATS_URL}?{ids_param}"
+            resp = requests.get(url, headers={"Accept": "application/json"})
 
             if resp.status_code != 200:
-                print(f"Warning: /audio-features returned {resp.status_code} — skipping audio features")
-                break
+                print(f"Warning: ReccoBeats returned {resp.status_code} — skipping chunk")
+                continue
 
             data = resp.json()
-            features_list = data.get("audio_features")
+            features_list = data.get("content")
             if not features_list:
-                print("Warning: /audio-features response has no data — endpoint may be deprecated for this app")
-                break
+                continue
+
+            # Build a lookup from Spotify track ID → features
+            href_to_features: dict[str, dict] = {}
+            for feat in features_list:
+                href = feat.get("href", "")
+                # href is like "https://open.spotify.com/track/<spotify_id>"
+                spotify_id = href.rsplit("/", 1)[-1] if href else None
+                if spotify_id:
+                    href_to_features[spotify_id] = feat
 
             for track in chunk:
-                for audio_feature in features_list:
-                    if audio_feature and track["id"] == audio_feature["id"]:
-                        track["audio_features"] = TrackAudioFeatures(
-                            acousticness=audio_feature["acousticness"],
-                            danceability=audio_feature["danceability"],
-                            energy=audio_feature["energy"],
-                            instrumentalness=audio_feature["instrumentalness"],
-                            liveness=audio_feature["liveness"],
-                            loudness=audio_feature["loudness"],
-                            speechiness=audio_feature["speechiness"],
-                            tempo=audio_feature["tempo"],
-                            valence=audio_feature["valence"],
-                        )
-                        break
+                feat = href_to_features.get(track["id"])
+                if feat:
+                    track["audio_features"] = TrackAudioFeatures(
+                        acousticness=feat.get("acousticness"),
+                        danceability=feat.get("danceability"),
+                        energy=feat.get("energy"),
+                        instrumentalness=feat.get("instrumentalness"),
+                        liveness=feat.get("liveness"),
+                        loudness=feat.get("loudness"),
+                        speechiness=feat.get("speechiness"),
+                        tempo=feat.get("tempo"),
+                        valence=feat.get("valence"),
+                    )
 
         return playlist_tracks

@@ -1,49 +1,69 @@
 # spotify-bpm-checker
 
-Checks a playlist's tracks for their BPM (beats per minute).
+Analyze a Spotify playlist's tracks for tempo, energy, and "vibe fit" — surface the songs that don't match the rest of the playlist.
 
-## Setup guide
+Stack:
 
-1. Clone the repository, and go to the root directory of the project.
-2. Create a virtual environment:
+- **Backend**: FastAPI (Python 3.12, Poetry)
+- **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS
+- **Auth**: Spotify OAuth 2.0 with PKCE (browser-only)
 
-```bash
-python -m venv .venv # or use specific version of python, e.g. python3.12
+## Project layout
+
+```
+app/         FastAPI backend
+frontend/    React + Vite frontend
 ```
 
-3. Activate the virtual environment:
+## Backend setup
 
-```bash
-source .venv/bin/activate # or .venv/Scripts/activate on Windows
-```
+1. From the repo root, create and activate a virtualenv:
+   ```bash
+   python -m venv .venv && source .venv/bin/activate
+   pip install poetry
+   ```
+2. Install dependencies:
+   ```bash
+   cd app
+   poetry install
+   ```
+3. Create `.env` in the repo root with your Spotify app credentials (used for the client-credentials flow that powers playlist analysis):
+   ```bash
+   CLIENT_ID=<your_spotify_client_id>
+   CLIENT_SECRET=<your_spotify_client_secret>
+   ```
+4. Run the API:
+   ```bash
+   cd app
+   PYTHONPATH=. uvicorn main:app --reload --port 8000
+   ```
 
-4. Install `poetry` with pip:
+Endpoints:
 
-```bash
-pip install poetry
-```
+- `GET /health` — sanity check
+- `GET /playlists/{playlist_id}/analysis` — returns every track in the playlist with audio features and `workout`/`sleepy` preset scores
 
-5. Go to the `app` directory and install dependencies with poetry:
+## Frontend setup
 
-```bash
-cd app
-poetry install
-```
+1. **Configure your Spotify app dashboard** — at https://developer.spotify.com/dashboard, edit your app and add this Redirect URI:
+   ```
+   http://127.0.0.1:5173/callback
+   ```
+2. Install deps and configure env:
+   ```bash
+   cd frontend
+   npm install
+   cp .env.example .env.local
+   # edit .env.local and set VITE_SPOTIFY_CLIENT_ID
+   ```
+3. Run the dev server:
+   ```bash
+   npm run dev
+   ```
+4. Open http://127.0.0.1:5173. The Vite dev server proxies `/api/*` to the FastAPI backend on port 8000.
 
-6. Create a .env file in the root directory and add the following:
+## Notes
 
-```bash
-CLIENT_ID=<ask Marcus>
-CLIENT_SECRET=<ask Marcus>
-```
-
-## Usage
-
-```bash
-cd app # If not already in the app directory
-export PYTHONPATH=.
-python <python_file_to_run>
-
-# e.g.
-python src/bpm_feature.py
-```
+- The frontend uses **PKCE** so the Spotify Client Secret never leaves the backend.
+- Access tokens are kept in `localStorage` for dev convenience. If this ever ships publicly, move the OAuth exchange behind the backend with httpOnly cookies.
+- Playlist analysis itself uses the backend's client-credentials token — the user's token is only used for the login UX and (later) listing the user's own playlists.

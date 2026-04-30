@@ -1,16 +1,14 @@
 import requests
 
-from src.get_access_token import get_access_token
-from src.entitites.track import TrackMetadata
+from src.entities.track import TrackMetadata
+from src.spotify_getters.spotify_client import SpotifyClient
 from tqdm import tqdm
 
 
 class SpotifyPlaylist:
-    def __init__(self) -> None:
-        self.access_token = get_access_token()
-        self.headers = {
-            "Authorization": f"Bearer {self.access_token}",
-        }
+    def __init__(self, client: SpotifyClient | None = None) -> None:
+        self._client = client or SpotifyClient()
+        self.headers = self._client.headers
 
     def get_playlist(self, playlist_id: str):
         url = f"https://api.spotify.com/v1/playlists/{playlist_id}"

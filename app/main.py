@@ -1,32 +1,59 @@
+import os
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from src.entitites.track import PresetScores
 
-app = FastAPI()
+from src.endpoints.analyze_playlist import analyze_playlist
+from src.entities.track import PresetScores, TrackAudioFeatures
 
-from src.endpoints.get_bpm_playlist import get_bpm_playlist
+app = FastAPI(title="Spotify Playlist Analyzer")
+
+# Allow the Vite dev server (and anything in CORS_ORIGINS env) to call us
+_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
+_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", _default_origins).split(",") if o.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-class TrackMeta(BaseModel):
+class TrackResult(BaseModel):
     id: str
     name: str
-    preset_scores: PresetScores | None
+    artists: list[str]
+    album: str
+    album_release_date: str | None = None
+    preview_url: str | None = None
+    audio_features: TrackAudioFeatures | None = None
+    preset_scores: PresetScores | None = None
 
 
-@app.get("/bpm-playlist/{playlist_id}", response_model=list[TrackMeta])
-def get_playlist(playlist_id: str):
-    playlist_tracks = get_bpm_playlist(playlist_id)
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
 
-    track_metas: list[TrackMeta] = [
-        TrackMeta(
-            id=track["id"],
-            name=track["name"],
-            preset_scores=track["preset_scores"] if "preset_scores" in track else None,
+
+@app.get("/playlists/{playlist_id}/analysis", response_model=list[TrackResult])
+def get_playlist_analysis(playlist_id: str) -> list[TrackResult]:
+    tracks = analyze_playlist(playlist_id)
+    return [
+        TrackResult(
+            id=t["id"],
+            name=t["name"],
+            artists=t["artists"],
+            album=t["album"],
+            album_release_date=t.get("album_release_date"),
+            preview_url=t.get("preview_url"),
+            audio_features=t.get("audio_features"),
+            preset_scores=t.get("preset_scores"),
         )
-        for track in playlist_tracks
+        for t in tracks
     ]
-
-    return track_metas
 
 
 if __name__ == "__main__":

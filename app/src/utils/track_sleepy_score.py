@@ -1,14 +1,14 @@
-from src.entitites.track import TrackAudioFeatures
+from src.entities.track import TrackAudioFeatures
 
 
 def calculate_sleepy_track_score(audio_features: TrackAudioFeatures):
 
     assert audio_features is not None
-    assert audio_features["acousticness"]
-    assert audio_features["liveness"]
-    assert audio_features["energy"]
-    assert audio_features["loudness"]
-    assert audio_features["tempo"]
+    assert audio_features["acousticness"] is not None
+    assert audio_features["liveness"] is not None
+    assert audio_features["energy"] is not None
+    assert audio_features["loudness"] is not None
+    assert audio_features["tempo"] is not None
 
     # Weights for each feature
     weights = {

@@ -1,12 +1,12 @@
-from src.entitites.track import TrackAudioFeatures
+from src.entities.track import TrackAudioFeatures
 
 
 def calculate_workout_track_score(audio_features: TrackAudioFeatures):
     assert audio_features is not None
-    assert audio_features["danceability"]
-    assert audio_features["energy"]
-    assert audio_features["tempo"]
-    assert audio_features["valence"]
+    assert audio_features["danceability"] is not None
+    assert audio_features["energy"] is not None
+    assert audio_features["tempo"] is not None
+    assert audio_features["valence"] is not None
 
     # Normalize tempo to a 0-1 scale (assuming typical workout tempo range of 120 to 160 BPM)
     normalized_tempo = (audio_features["tempo"] - 120) / (160 - 120)

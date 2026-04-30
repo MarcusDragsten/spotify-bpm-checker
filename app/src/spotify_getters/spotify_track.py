@@ -1,16 +1,14 @@
 import requests
 
-from src.get_access_token import get_access_token
-from src.entitites.track import TrackMetadata, TrackAudioFeatures
+from src.entities.track import TrackMetadata, TrackAudioFeatures
+from src.spotify_getters.spotify_client import SpotifyClient
 from tqdm import tqdm
 
 
 class SpotifyTrack:
-    def __init__(self) -> None:
-        self.access_token = get_access_token()
-        self.headers = {
-            "Authorization": f"Bearer {self.access_token}",
-        }
+    def __init__(self, client: SpotifyClient | None = None) -> None:
+        self._client = client or SpotifyClient()
+        self.headers = self._client.headers
 
     def chunk_list(self, lst, chunk_size):
         """Yield successive chunks from lst."""
@@ -20,18 +18,25 @@ class SpotifyTrack:
     def add_audio_features(
         self, playlist_tracks: list[TrackMetadata]
     ) -> list[TrackMetadata]:
-        tracks_with_audio_features: list[TrackMetadata] = []
-
         for chunk in tqdm(
             self.chunk_list(playlist_tracks, 100), desc="Processing tracks in chunks"
         ):
             url = f"https://api.spotify.com/v1/audio-features?ids={','.join([track['id'] for track in chunk])}"
             resp = requests.get(url, headers=self.headers)
-            audio_features = resp.json()
+
+            if resp.status_code != 200:
+                print(f"Warning: /audio-features returned {resp.status_code} — skipping audio features")
+                break
+
+            data = resp.json()
+            features_list = data.get("audio_features")
+            if not features_list:
+                print("Warning: /audio-features response has no data — endpoint may be deprecated for this app")
+                break
 
             for track in chunk:
-                for audio_feature in audio_features["audio_features"]:
-                    if track["id"] == audio_feature["id"]:
+                for audio_feature in features_list:
+                    if audio_feature and track["id"] == audio_feature["id"]:
                         track["audio_features"] = TrackAudioFeatures(
                             acousticness=audio_feature["acousticness"],
                             danceability=audio_feature["danceability"],
@@ -43,7 +48,6 @@ class SpotifyTrack:
                             tempo=audio_feature["tempo"],
                             valence=audio_feature["valence"],
                         )
-                        tracks_with_audio_features.append(track)
                         break
 
-        return tracks_with_audio_features
+        return playlist_tracks
